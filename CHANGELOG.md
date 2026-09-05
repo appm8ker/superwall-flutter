@@ -2,6 +2,11 @@
 
 The changelog for `Superwall`. Also see the [releases](https://github.com/superwall/Superwall-Flutter/releases) on GitHub.
 
+## 2.4.9+anotar.2
+
+## Enhancements
+- Adds `Superwall.shared.getIntroOfferEligibility(productIds)`: per-product free-trial eligibility for the current store user (StoreKit 2 `isEligibleForIntroOffer` on iOS; `true` on Android where Play only returns eligible offers).
+
 ## 2.4.9+anotar.1
 
 ## Enhancements

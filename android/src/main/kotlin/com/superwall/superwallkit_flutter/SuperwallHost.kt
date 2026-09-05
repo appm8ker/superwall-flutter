@@ -442,6 +442,16 @@ class SuperwallHost(
         }
     }
 
+    // Play Billing only returns the subscription offers the user is eligible
+    // for, so Superwall's StoreProduct.hasFreeTrial already reflects
+    // eligibility on Android.
+    override fun getIntroOfferEligibility(
+        productIds: List<String>,
+        callback: (Result<Map<String, Boolean>>) -> Unit
+    ) {
+        callback(Result.success(productIds.associateWith { true }))
+    }
+
     override fun purchase(productId: String, callback: (Result<PPurchaseResult>) -> Unit) {
         ioScope.launch {
             val res = Superwall.instance.purchase(productId).map { it.toPigeon() }

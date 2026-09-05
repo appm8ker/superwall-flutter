@@ -3920,6 +3920,10 @@ protocol PSuperwallHostApi {
   func consume(purchaseToken: String, completion: @escaping (Result<String, Error>) -> Void)
   func getProducts(productIds: [String], completion: @escaping (Result<[PStoreProduct], Error>) -> Void)
   func purchase(productId: String, completion: @escaping (Result<PPurchaseResult, Error>) -> Void)
+  /// Whether the current App Store user can still take each product's
+  /// introductory offer (free trial). Android: always true, Play Billing only
+  /// returns offers the user is eligible for.
+  func getIntroOfferEligibility(productIds: [String], completion: @escaping (Result<[String: Bool], Error>) -> Void)
   func getLocaleIdentifier() throws -> String?
   func setLocaleIdentifier(localeIdentifier: String?) throws
   func getUserId() throws -> String
@@ -4182,6 +4186,26 @@ class PSuperwallHostApiSetup {
       }
     } else {
       purchaseChannel.setMessageHandler(nil)
+    }
+    /// Whether the current App Store user can still take each product's
+    /// introductory offer (free trial). Android: always true, Play Billing only
+    /// returns offers the user is eligible for.
+    let getIntroOfferEligibilityChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.superwallkit_flutter.PSuperwallHostApi.getIntroOfferEligibility\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getIntroOfferEligibilityChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let productIdsArg = args[0] as! [String]
+        api.getIntroOfferEligibility(productIds: productIdsArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      getIntroOfferEligibilityChannel.setMessageHandler(nil)
     }
     let getLocaleIdentifierChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.superwallkit_flutter.PSuperwallHostApi.getLocaleIdentifier\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {

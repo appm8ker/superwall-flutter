@@ -4333,6 +4333,12 @@ interface PSuperwallHostApi {
   fun consume(purchaseToken: String, callback: (Result<String>) -> Unit)
   fun getProducts(productIds: List<String>, callback: (Result<List<PStoreProduct>>) -> Unit)
   fun purchase(productId: String, callback: (Result<PPurchaseResult>) -> Unit)
+  /**
+   * Whether the current App Store user can still take each product's
+   * introductory offer (free trial). Android: always true, Play Billing only
+   * returns offers the user is eligible for.
+   */
+  fun getIntroOfferEligibility(productIds: List<String>, callback: (Result<Map<String, Boolean>>) -> Unit)
   fun getLocaleIdentifier(): String?
   fun setLocaleIdentifier(localeIdentifier: String?)
   fun getUserId(): String
@@ -4627,6 +4633,26 @@ interface PSuperwallHostApi {
             val args = message as List<Any?>
             val productIdArg = args[0] as String
             api.purchase(productIdArg) { result: Result<PPurchaseResult> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.superwallkit_flutter.PSuperwallHostApi.getIntroOfferEligibility$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val productIdsArg = args[0] as List<String>
+            api.getIntroOfferEligibility(productIdsArg) { result: Result<Map<String, Boolean>> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(wrapError(error))

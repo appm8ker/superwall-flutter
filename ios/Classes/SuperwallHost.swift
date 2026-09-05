@@ -1,4 +1,5 @@
 import Flutter
+import StoreKit
 import SuperwallKit
 import Foundation
 import Combine
@@ -385,6 +386,26 @@ final class SuperwallHost : NSObject, PSuperwallHostApi {
       let byId = Dictionary(products.map { ($0.productIdentifier, $0) }, uniquingKeysWith: { first, _ in first })
       let ordered = productIds.compactMap { byId[$0] }
       completion(.success(ordered.map { $0.pigeonify() }))
+    }
+  }
+
+  /// StoreKit 2 eligibility for each product's introductory offer — the same
+  /// check the SDK runs before rendering a paywall's trial copy. Products
+  /// StoreKit doesn't return, or that have no subscription info, report
+  /// `false` so a caller never promises a trial it can't deliver.
+  func getIntroOfferEligibility(productIds: [String], completion: @escaping (Result<[String: Bool], Error>) -> Void) {
+    Task {
+      var out: [String: Bool] = [:]
+      for id in productIds { out[id] = false }
+      if #available(iOS 15.0, *) {
+        let products = (try? await Product.products(for: productIds)) ?? []
+        for product in products {
+          if let subscription = product.subscription {
+            out[product.id] = await subscription.isEligibleForIntroOffer
+          }
+        }
+      }
+      completion(.success(out))
     }
   }
 

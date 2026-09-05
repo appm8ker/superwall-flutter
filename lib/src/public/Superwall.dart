@@ -493,6 +493,16 @@ class Superwall {
     return PurchaseResult.fromPPurchaseResult(result);
   }
 
+  /// Whether the current store user can still take each product's
+  /// introductory offer (free trial), keyed by product id. Use it to decide
+  /// trial copy: [StoreProduct.hasFreeTrial] only says the product HAS an
+  /// offer, not that this user is eligible. iOS answers from StoreKit 2;
+  /// Android reports `true` (Play only returns eligible offers).
+  Future<Map<String, bool>> getIntroOfferEligibility(List<String> productIds) async {
+    final result = await hostApi.getIntroOfferEligibility(productIds);
+    return {for (final e in result.entries) e.key: e.value};
+  }
+
   // Identifies a user with the given ID and options
   Future<void> identify(String userId, [IdentityOptions? options]) async {
     generated.PIdentityOptions? generatedOptions;

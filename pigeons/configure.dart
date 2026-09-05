@@ -1388,6 +1388,12 @@ abstract class PSuperwallHostApi {
   @async
   PPurchaseResult purchase(String productId);
 
+  /// Whether the current App Store user can still take each product's
+  /// introductory offer (free trial). Android: always true, Play Billing only
+  /// returns offers the user is eligible for.
+  @async
+  Map<String, bool> getIntroOfferEligibility(List<String> productIds);
+
   // Locale methods
   String? getLocaleIdentifier();
   void setLocaleIdentifier(String? localeIdentifier);
