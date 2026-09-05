@@ -2,6 +2,11 @@
 
 The changelog for `Superwall`. Also see the [releases](https://github.com/superwall/Superwall-Flutter/releases) on GitHub.
 
+## 2.4.9+anotar.1
+
+## Enhancements
+- Adds `Superwall.shared.getProducts(productIds)` and `Superwall.shared.purchase(productId)` to purchase products outside of a paywall, bridging the native SDKs' direct-purchasing APIs (`products(for:)` / `purchase(_:)` on iOS, `getProducts` / `purchase(productId)` on Android).
+
 ## 2.4.9
 
 ## Enhancements

@@ -1381,6 +1381,13 @@ abstract class PSuperwallHostApi {
   @async
   String consume(String purchaseToken);
 
+  // Direct purchasing (outside of a paywall)
+  @async
+  List<PStoreProduct> getProducts(List<String> productIds);
+
+  @async
+  PPurchaseResult purchase(String productId);
+
   // Locale methods
   String? getLocaleIdentifier();
   void setLocaleIdentifier(String? localeIdentifier);

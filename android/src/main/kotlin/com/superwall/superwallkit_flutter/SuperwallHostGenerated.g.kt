@@ -4331,6 +4331,8 @@ interface PSuperwallHostApi {
   fun setIntegrationAttributes(attributes: Map<PIntegrationAttribute, String?>)
   fun getDeviceAttributes(callback: (Result<Map<String, Any>>) -> Unit)
   fun consume(purchaseToken: String, callback: (Result<String>) -> Unit)
+  fun getProducts(productIds: List<String>, callback: (Result<List<PStoreProduct>>) -> Unit)
+  fun purchase(productId: String, callback: (Result<PPurchaseResult>) -> Unit)
   fun getLocaleIdentifier(): String?
   fun setLocaleIdentifier(localeIdentifier: String?)
   fun getUserId(): String
@@ -4585,6 +4587,46 @@ interface PSuperwallHostApi {
             val args = message as List<Any?>
             val purchaseTokenArg = args[0] as String
             api.consume(purchaseTokenArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.superwallkit_flutter.PSuperwallHostApi.getProducts$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val productIdsArg = args[0] as List<String>
+            api.getProducts(productIdsArg) { result: Result<List<PStoreProduct>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.superwallkit_flutter.PSuperwallHostApi.purchase$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val productIdArg = args[0] as String
+            api.purchase(productIdArg) { result: Result<PPurchaseResult> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(wrapError(error))

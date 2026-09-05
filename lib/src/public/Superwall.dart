@@ -472,6 +472,27 @@ class Superwall {
     return RestorationResult.fromPRestorationResult(result);
   }
 
+  /// Fetches the [StoreProduct]s for [productIds], in the same order.
+  /// Identifiers the store doesn't return are omitted. Products must exist in
+  /// the Superwall dashboard so the SDK can attach their entitlements.
+  Future<List<StoreProduct>> getProducts(List<String> productIds) async {
+    final products = await hostApi.getProducts(productIds);
+    return products.map(StoreProduct.fromPigeon).toList();
+  }
+
+  /// Purchases [productId] outside of a paywall. Superwall runs the store
+  /// transaction (StoreKit / Play Billing), finishes it, and fires the same
+  /// delegate events as a paywall purchase (`transactionStart`,
+  /// `transactionComplete`, `subscriptionStart` / `freeTrialStart`, plus a
+  /// `subscriptionStatusDidChange`). On Android, [productId] may use the
+  /// `product:basePlan:offer` form (or `sw-auto` as the offer).
+  ///
+  /// Cannot be used while `SuperwallOptions.shouldObservePurchases` is `true`.
+  Future<PurchaseResult> purchase(String productId) async {
+    final result = await hostApi.purchase(productId);
+    return PurchaseResult.fromPPurchaseResult(result);
+  }
+
   // Identifies a user with the given ID and options
   Future<void> identify(String userId, [IdentityOptions? options]) async {
     generated.PIdentityOptions? generatedOptions;

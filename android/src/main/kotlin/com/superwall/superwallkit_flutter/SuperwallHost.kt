@@ -26,6 +26,12 @@ import PPaywallNotAvailablePresentationResult
 import POnBackPressedGenerated
 import PPurchaseControllerGenerated
 import PPurchaseControllerHost
+import PPurchaseCancelled
+import PPurchaseFailed
+import PPurchasePending
+import PPurchasePurchased
+import PPurchaseResult
+import PStoreProduct
 import PRestorationFailed
 import PRestorationRestored
 import PRestorationResult
@@ -65,6 +71,8 @@ import io.flutter.plugin.common.BinaryMessenger
 import android.util.Log
 import com.superwall.sdk.config.options.SuperwallOptions
 import com.superwall.sdk.delegate.RestorationResult
+import com.superwall.sdk.delegate.PurchaseResult
+import pigeonify
 import com.superwall.sdk.logger.LogLevel
 import com.superwall.sdk.misc.ActivityProvider
 import com.superwall.sdk.paywall.presentation.get_presentation_result.getPresentationResult
@@ -419,6 +427,28 @@ class SuperwallHost(
         }
     }
 
+    // MARK: - Direct purchasing (outside of a paywall)
+
+    override fun getProducts(
+        productIds: List<String>,
+        callback: (Result<List<PStoreProduct>>) -> Unit
+    ) {
+        ioScope.launch {
+            val res = Superwall.instance.getProducts(*productIds.toTypedArray()).map { byId ->
+                // Preserve the caller's order; drop identifiers the store didn't return.
+                productIds.mapNotNull { id -> byId[id]?.pigeonify() }
+            }
+            callback(res)
+        }
+    }
+
+    override fun purchase(productId: String, callback: (Result<PPurchaseResult>) -> Unit) {
+        ioScope.launch {
+            val res = Superwall.instance.purchase(productId).map { it.toPigeon() }
+            callback(res)
+        }
+    }
+
     override fun onListen(p0: Any?, sink: PigeonEventSink<PSubscriptionStatus>) {
         latestStreamJob = ioScope.launch {
             Superwall.instance.subscriptionStatus.collectLatest {
@@ -447,6 +477,16 @@ class SuperwallHost(
         }
     }
 }
+
+// MARK: - PurchaseResult -> Pigeon
+private fun PurchaseResult.toPigeon(): PPurchaseResult =
+    when (this) {
+        is PurchaseResult.Purchased -> PPurchasePurchased()
+        is PurchaseResult.Pending -> PPurchasePending()
+        is PurchaseResult.Cancelled -> PPurchaseCancelled()
+        is PurchaseResult.Failed -> PPurchaseFailed(errorMessage)
+        else -> PPurchaseFailed("Unknown purchase result: $this")
+    }
 
 // MARK: - PIntegrationAttribute Extension
 fun PIntegrationAttribute.toAttributeKey(): String {

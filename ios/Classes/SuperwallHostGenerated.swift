@@ -3918,6 +3918,8 @@ protocol PSuperwallHostApi {
   func setIntegrationAttributes(attributes: [PIntegrationAttribute: String?]) throws
   func getDeviceAttributes(completion: @escaping (Result<[String: Any], Error>) -> Void)
   func consume(purchaseToken: String, completion: @escaping (Result<String, Error>) -> Void)
+  func getProducts(productIds: [String], completion: @escaping (Result<[PStoreProduct], Error>) -> Void)
+  func purchase(productId: String, completion: @escaping (Result<PPurchaseResult, Error>) -> Void)
   func getLocaleIdentifier() throws -> String?
   func setLocaleIdentifier(localeIdentifier: String?) throws
   func getUserId() throws -> String
@@ -4146,6 +4148,40 @@ class PSuperwallHostApiSetup {
       }
     } else {
       consumeChannel.setMessageHandler(nil)
+    }
+    let getProductsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.superwallkit_flutter.PSuperwallHostApi.getProducts\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getProductsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let productIdsArg = args[0] as! [String]
+        api.getProducts(productIds: productIdsArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      getProductsChannel.setMessageHandler(nil)
+    }
+    let purchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.superwallkit_flutter.PSuperwallHostApi.purchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      purchaseChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let productIdArg = args[0] as! String
+        api.purchase(productId: productIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      purchaseChannel.setMessageHandler(nil)
     }
     let getLocaleIdentifierChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.superwallkit_flutter.PSuperwallHostApi.getLocaleIdentifier\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {

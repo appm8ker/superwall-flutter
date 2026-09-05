@@ -375,6 +375,31 @@ final class SuperwallHost : NSObject, PSuperwallHostApi {
       completion(.success(purchaseToken))
     }
   }
+
+  // MARK: - Direct purchasing (outside of a paywall)
+
+  func getProducts(productIds: [String], completion: @escaping (Result<[PStoreProduct], Error>) -> Void) {
+    Task {
+      let products = await Superwall.shared.products(for: Set(productIds))
+      // Preserve the caller's order; drop identifiers the store didn't return.
+      let byId = Dictionary(products.map { ($0.productIdentifier, $0) }, uniquingKeysWith: { first, _ in first })
+      let ordered = productIds.compactMap { byId[$0] }
+      completion(.success(ordered.map { $0.pigeonify() }))
+    }
+  }
+
+  func purchase(productId: String, completion: @escaping (Result<any PPurchaseResult, Error>) -> Void) {
+    Task {
+      guard let product = await Superwall.shared.products(for: [productId]).first else {
+        completion(.success(PPurchaseFailed(
+          error: "Product \"\(productId)\" not found. Make sure it exists in the Superwall dashboard and the store."
+        )))
+        return
+      }
+      let result = await Superwall.shared.purchase(product)
+      completion(.success(result.pigeonify()))
+    }
+  }
 }
 
 final class SubscriptionStatusStreamHandlerImpl: StreamSubscriptionStatusStreamHandler {
