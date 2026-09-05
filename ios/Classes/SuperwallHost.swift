@@ -1,5 +1,4 @@
 import Flutter
-import StoreKit
 import SuperwallKit
 import Foundation
 import Combine
@@ -395,17 +394,7 @@ final class SuperwallHost : NSObject, PSuperwallHostApi {
   /// `false` so a caller never promises a trial it can't deliver.
   func getIntroOfferEligibility(productIds: [String], completion: @escaping (Result<[String: Bool], Error>) -> Void) {
     Task {
-      var out: [String: Bool] = [:]
-      for id in productIds { out[id] = false }
-      if #available(iOS 15.0, *) {
-        let products = (try? await Product.products(for: productIds)) ?? []
-        for product in products {
-          if let subscription = product.subscription {
-            out[product.id] = await subscription.isEligibleForIntroOffer
-          }
-        }
-      }
-      completion(.success(out))
+      completion(.success(await IntroOfferEligibility.check(productIds)))
     }
   }
 
