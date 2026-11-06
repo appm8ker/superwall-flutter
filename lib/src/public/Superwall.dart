@@ -592,8 +592,16 @@ class Superwall {
   ///
   /// Products are returned in the order requested. Identifiers the store
   /// doesn't recognize are omitted from the result.
-  Future<List<StoreProduct>> getProducts(List<String> productIds) async {
-    final products = await hostApi.getProducts(productIds);
+  ///
+  /// With [billingPlan], returns only the products that offer that plan on this
+  /// device, with their price fields being that plan's price. An empty result
+  /// means the plan isn't available, which is always the case on Android.
+  Future<List<StoreProduct>> getProducts(
+    List<String> productIds, {
+    BillingPlan? billingPlan,
+  }) async {
+    final products =
+        await hostApi.getProducts(productIds, billingPlan?.toPigeon());
     return products.map(StoreProduct.fromPigeon).toList();
   }
 
@@ -606,9 +614,27 @@ class Superwall {
   ///
   /// On iOS, this returns [PurchaseResultCancelled] when
   /// `SuperwallOptions.shouldObservePurchases` is enabled, matching the native SDK.
-  Future<PurchaseResult> purchase(String productId) async {
-    final result = await hostApi.purchase(productId);
+  ///
+  /// [billingPlan] buys that App Store plan of the product. If it isn't
+  /// available, which is always the case on Android, a [PurchaseResultFailed]
+  /// is returned.
+  Future<PurchaseResult> purchase(
+    String productId, {
+    BillingPlan? billingPlan,
+  }) async {
+    final result = await hostApi.purchase(productId, billingPlan?.toPigeon());
     return PurchaseResult.fromPPurchaseResult(result);
+  }
+
+  /// Whether the current store user can still take each product's
+  /// introductory offer (free trial), keyed by product id. Use it to decide
+  /// trial copy: [StoreProduct.hasFreeTrial] only says the product HAS an
+  /// offer, not that this user is eligible. iOS answers from StoreKit 2;
+  /// Android reports `true` (Play only returns eligible offers).
+  Future<Map<String, bool>> getIntroOfferEligibility(
+      List<String> productIds) async {
+    final result = await hostApi.getIntroOfferEligibility(productIds);
+    return {for (final e in result.entries) e.key: e.value};
   }
 
   /// Android only. Returns the one-time (in-app) products the user currently

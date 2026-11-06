@@ -78,7 +78,8 @@ void main() {
           .getProducts(['coins_100', 'unknown', 'coins_500']);
 
       expect(calls.single, [
-        ['coins_100', 'unknown', 'coins_500']
+        ['coins_100', 'unknown', 'coins_500'],
+        null
       ]);
       expect(products.map((p) => p.productIdentifier),
           ['coins_100', 'coins_500']);
@@ -98,7 +99,7 @@ void main() {
       test('maps ${native.runtimeType}', () async {
         final calls = mockHost('purchase', reply: native);
         final result = await Superwall.shared.purchase('coins_100');
-        expect(calls.single, ['coins_100']);
+        expect(calls.single, ['coins_100', null]);
         expect(result.runtimeType, expected);
       });
     });
@@ -110,6 +111,40 @@ void main() {
       expect(result, isA<PurchaseResultFailed>());
       expect((result as PurchaseResultFailed).error,
           'Product with id x not found');
+    });
+  });
+
+  group('billing plan', () {
+    test('getProducts forwards the plan', () async {
+      final calls = mockHost('getProducts', reply: <PStoreProduct>[]);
+      final products = await Superwall.shared
+          .getProducts(['basic1year'], billingPlan: BillingPlan.monthly);
+      expect(calls.single, [
+        ['basic1year'],
+        PBillingPlan.monthly
+      ]);
+      expect(products, isEmpty);
+    });
+
+    test('purchase forwards the plan', () async {
+      final calls = mockHost('purchase', reply: PPurchasePurchased());
+      final result = await Superwall.shared
+          .purchase('basic1year', billingPlan: BillingPlan.upFront);
+      expect(calls.single, ['basic1year', PBillingPlan.upFront]);
+      expect(result, isA<PurchaseResultPurchased>());
+    });
+  });
+
+  group('getIntroOfferEligibility', () {
+    test('maps the answer per product', () async {
+      final calls = mockHost('getIntroOfferEligibility',
+          reply: <String, bool>{'basic1year': true, 'max1year': false});
+      final eligible = await Superwall.shared
+          .getIntroOfferEligibility(['basic1year', 'max1year']);
+      expect(calls.single, [
+        ['basic1year', 'max1year']
+      ]);
+      expect(eligible, {'basic1year': true, 'max1year': false});
     });
   });
 

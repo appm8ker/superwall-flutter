@@ -14,6 +14,8 @@ import 'package:pigeon/pigeon.dart';
 
 // ============= CLASSES, ENUMS, DATA MODELS =============
 
+enum PBillingPlan { upFront, monthly }
+
 sealed class PRedemptionResult {
   PRedemptionResult();
 }
@@ -1645,11 +1647,20 @@ abstract class PSuperwallHostApi {
   String consume(String purchaseToken);
 
   // Products & purchasing outside of a paywall
+  /// With [billingPlan], returns only products that offer that plan on this
+  /// device, priced on it. Android has no billing plans: always empty.
   @async
-  List<PStoreProduct> getProducts(List<String> productIds);
+  List<PStoreProduct> getProducts(List<String> productIds, PBillingPlan? billingPlan);
 
+  /// Android has no billing plans: a non-null [billingPlan] fails.
   @async
-  PPurchaseResult purchase(String productId);
+  PPurchaseResult purchase(String productId, PBillingPlan? billingPlan);
+
+  /// Whether the current App Store user can still take each product's
+  /// introductory offer (free trial). Android: always true, Play Billing only
+  /// returns offers the user is eligible for.
+  @async
+  Map<String, bool> getIntroOfferEligibility(List<String> productIds);
 
   // Android only: owned one-time products in the PURCHASED state.
   @async

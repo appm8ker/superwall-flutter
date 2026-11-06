@@ -379,7 +379,27 @@ final class SuperwallHost : NSObject, PSuperwallHostApi {
     }
   }
 
-  func getProducts(productIds: [String], completion: @escaping (Result<[PStoreProduct], Error>) -> Void) {
+  /// [product] on [billingPlan], or nil when this device or storefront doesn't
+  /// offer it. No plan keeps the product as it is. Choosing a plan needs
+  /// `StoreProduct.withBillingPlan`, which stock SuperwallKit doesn't expose:
+  /// without the ANOTAR_BILLING_PLAN build condition, every plan is unavailable.
+  private func product(_ product: StoreProduct, on billingPlan: PBillingPlan?) -> StoreProduct? {
+    guard let billingPlan else { return product }
+    #if ANOTAR_BILLING_PLAN
+    let planned = product.withBillingPlan(billingPlan == .monthly ? .monthly : .upFront)
+    return planned.isBillingPlanAvailable ? planned : nil
+    #else
+    return nil
+    #endif
+  }
+
+  func getIntroOfferEligibility(productIds: [String], completion: @escaping (Result<[String: Bool], Error>) -> Void) {
+    Task {
+      completion(.success(await IntroOfferEligibility.check(productIds)))
+    }
+  }
+
+  func getProducts(productIds: [String], billingPlan: PBillingPlan?, completion: @escaping (Result<[PStoreProduct], Error>) -> Void) {
     Task {
       let products = await Superwall.shared.products(for: Set(productIds))
       let productsById = Dictionary(
@@ -390,16 +410,21 @@ final class SuperwallHost : NSObject, PSuperwallHostApi {
       var seen = Set<String>()
       let result = productIds
         .filter { seen.insert($0).inserted }
-        .compactMap { productsById[$0]?.pigeonify() }
+        .compactMap { productsById[$0] }
+        .compactMap { product($0, on: billingPlan)?.pigeonify() }
       completion(.success(result))
     }
   }
 
-  func purchase(productId: String, completion: @escaping (Result<any PPurchaseResult, Error>) -> Void) {
+  func purchase(productId: String, billingPlan: PBillingPlan?, completion: @escaping (Result<any PPurchaseResult, Error>) -> Void) {
     Task {
       let products = await Superwall.shared.products(for: [productId])
-      guard let product = products.first(where: { $0.productIdentifier == productId }) else {
+      guard let found = products.first(where: { $0.productIdentifier == productId }) else {
         completion(.success(PPurchaseFailed(error: "Product with id \(productId) not found")))
+        return
+      }
+      guard let product = product(found, on: billingPlan) else {
+        completion(.success(PPurchaseFailed(error: "Billing plan not available for \(productId)")))
         return
       }
       let result = await Superwall.shared.purchase(product)

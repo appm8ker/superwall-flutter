@@ -1,6 +1,7 @@
 library superwallkit_flutter;
 
 export 'src/public/AdConsent.dart';
+export 'src/public/BillingPlan.dart';
 export 'src/public/ComputedPropertyRequest.dart';
 export 'src/public/ConfirmedAssignments.dart';
 export 'src/public/CustomCallback.dart';

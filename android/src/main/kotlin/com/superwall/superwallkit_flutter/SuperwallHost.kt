@@ -36,6 +36,7 @@ import PPurchaseControllerHost
 import PPurchaseFailed
 import PPurchasePending
 import PPurchasePurchased
+import PBillingPlan
 import PPurchaseResult
 import PRestorationFailed
 import PRestorationRestored
@@ -492,10 +493,25 @@ class SuperwallHost(
         }
     }
 
+    // Play Billing only returns the subscription offers the user is eligible
+    // for, so StoreProduct.hasFreeTrial already reflects eligibility on Android.
+    override fun getIntroOfferEligibility(
+        productIds: List<String>,
+        callback: (Result<Map<String, Boolean>>) -> Unit
+    ) {
+        callback(Result.success(productIds.associateWith { true }))
+    }
+
     override fun getProducts(
         productIds: List<String>,
+        billingPlan: PBillingPlan?,
         callback: (Result<List<PStoreProduct>>) -> Unit
     ) {
+        // Billing plans are an App Store feature.
+        if (billingPlan != null) {
+            callback(Result.success(emptyList()))
+            return
+        }
         ioScope.launch {
             val ids = productIds.distinct()
             if (ids.isEmpty()) {
@@ -525,7 +541,15 @@ class SuperwallHost(
         }
     }
 
-    override fun purchase(productId: String, callback: (Result<PPurchaseResult>) -> Unit) {
+    override fun purchase(
+        productId: String,
+        billingPlan: PBillingPlan?,
+        callback: (Result<PPurchaseResult>) -> Unit
+    ) {
+        if (billingPlan != null) {
+            callback(Result.success(PPurchaseFailed("Billing plans are not available on Android")))
+            return
+        }
         ioScope.launch {
             val result = Superwall.instance.purchase(productId).fold(
                 onSuccess = {

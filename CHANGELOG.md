@@ -2,6 +2,13 @@
 
 The changelog for `Superwall`. Also see the [releases](https://github.com/superwall/Superwall-Flutter/releases) on GitHub.
 
+## 2.8.0+anotar.1
+
+### Enhancements
+- Adds `BillingPlan`, and a `billingPlan` argument on `Superwall.shared.getProducts` and `Superwall.shared.purchase`, to buy the App Store's monthly plan with a 12-month commitment outside of a paywall. iOS only, and it needs SuperwallKit with `StoreProduct.withBillingPlan` built with the `ANOTAR_BILLING_PLAN` condition. Without that, or on Android, no plan is available.
+- Adds `Superwall.shared.getIntroOfferEligibility(productIds)`: per-product free-trial eligibility for the current store user.
+- Updates iOS SDK to 4.19.1.
+
 ## 2.8.0
 
 ### Enhancements
