@@ -99,7 +99,7 @@ void main() {
       test('maps ${native.runtimeType}', () async {
         final calls = mockHost('purchase', reply: native);
         final result = await Superwall.shared.purchase('coins_100');
-        expect(calls.single, ['coins_100', null]);
+        expect(calls.single, ['coins_100', null, null]);
         expect(result.runtimeType, expected);
       });
     });
@@ -130,8 +130,33 @@ void main() {
       final calls = mockHost('purchase', reply: PPurchasePurchased());
       final result = await Superwall.shared
           .purchase('basic1year', billingPlan: BillingPlan.upFront);
-      expect(calls.single, ['basic1year', PBillingPlan.upFront]);
+      expect(calls.single, ['basic1year', PBillingPlan.upFront, null]);
       expect(result, isA<PurchaseResultPurchased>());
+    });
+  });
+
+  group('promotional offer', () {
+    test('purchase forwards the offer and its signature', () async {
+      final calls = mockHost('purchase', reply: PPurchasePurchased());
+      final result = await Superwall.shared.purchase('max1year',
+          promotionalOffer: const PromotionalOffer(
+              offerId: 'black_max_26', compactJws: 'a.b.c'));
+      final args = calls.single as List<Object?>;
+      expect(args[0], 'max1year');
+      expect(args[1], isNull);
+      final offer = args[2] as PPromotionalOffer;
+      expect(offer.offerId, 'black_max_26');
+      expect(offer.compactJws, 'a.b.c');
+      expect(result, isA<PurchaseResultPurchased>());
+    });
+
+    test('getPromotionalOfferPrices maps the price per offer', () async {
+      final calls = mockHost('getPromotionalOfferPrices',
+          reply: <String, double>{'black_max_26': 399.9});
+      final prices =
+          await Superwall.shared.getPromotionalOfferPrices('max1year');
+      expect(calls.single, ['max1year']);
+      expect(prices, {'black_max_26': 399.9});
     });
   });
 

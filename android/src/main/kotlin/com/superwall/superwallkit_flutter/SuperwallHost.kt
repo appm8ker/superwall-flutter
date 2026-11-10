@@ -502,6 +502,14 @@ class SuperwallHost(
         callback(Result.success(productIds.associateWith { true }))
     }
 
+    // Promotional offers are an App Store feature.
+    override fun getPromotionalOfferPrices(
+        productId: String,
+        callback: (Result<Map<String, Double>>) -> Unit
+    ) {
+        callback(Result.success(emptyMap()))
+    }
+
     override fun getProducts(
         productIds: List<String>,
         billingPlan: PBillingPlan?,
@@ -544,10 +552,15 @@ class SuperwallHost(
     override fun purchase(
         productId: String,
         billingPlan: PBillingPlan?,
+        promotionalOffer: PPromotionalOffer?,
         callback: (Result<PPurchaseResult>) -> Unit
     ) {
         if (billingPlan != null) {
             callback(Result.success(PPurchaseFailed("Billing plans are not available on Android")))
+            return
+        }
+        if (promotionalOffer != null) {
+            callback(Result.success(PPurchaseFailed("Promotional offers are not available on Android")))
             return
         }
         ioScope.launch {

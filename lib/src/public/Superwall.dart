@@ -618,12 +618,29 @@ class Superwall {
   /// [billingPlan] buys that App Store plan of the product. If it isn't
   /// available, which is always the case on Android, a [PurchaseResultFailed]
   /// is returned.
+  ///
+  /// [promotionalOffer] buys the product with that App Store promotional
+  /// offer. If it can't be applied, which is always the case on Android, a
+  /// [PurchaseResultFailed] is returned: the regular price is never charged
+  /// in its place.
   Future<PurchaseResult> purchase(
     String productId, {
     BillingPlan? billingPlan,
+    PromotionalOffer? promotionalOffer,
   }) async {
-    final result = await hostApi.purchase(productId, billingPlan?.toPigeon());
+    final result = await hostApi.purchase(
+        productId, billingPlan?.toPigeon(), promotionalOffer?.toPigeon());
     return PurchaseResult.fromPPurchaseResult(result);
+  }
+
+  /// The price of each App Store promotional offer of a product, keyed by
+  /// offer id, in the product's currency. The store lists a product's offers
+  /// to everyone, whether or not this user can buy them. Empty when the
+  /// product has none, which is always the case on Android.
+  Future<Map<String, double>> getPromotionalOfferPrices(
+      String productId) async {
+    final result = await hostApi.getPromotionalOfferPrices(productId);
+    return {for (final e in result.entries) e.key: e.value};
   }
 
   /// Whether the current store user can still take each product's

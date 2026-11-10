@@ -416,15 +416,45 @@ final class SuperwallHost : NSObject, PSuperwallHostApi {
     }
   }
 
-  func purchase(productId: String, billingPlan: PBillingPlan?, completion: @escaping (Result<any PPurchaseResult, Error>) -> Void) {
+  /// [product] bought with [offer]. No offer keeps the product as it is. An
+  /// offer needs `StoreProduct.withPromotionalOffer`, which stock SuperwallKit
+  /// doesn't expose: without the ANOTAR_PROMOTIONAL_OFFER build condition it
+  /// returns nil, so the regular price is never charged in the offer's place.
+  private func product(_ product: StoreProduct, with offer: PPromotionalOffer?) -> StoreProduct? {
+    guard let offer else { return product }
+    #if ANOTAR_PROMOTIONAL_OFFER
+    return product.withPromotionalOffer(
+      PromotionalOffer(offerId: offer.offerId, compactJWS: offer.compactJws)
+    )
+    #else
+    return nil
+    #endif
+  }
+
+  func getPromotionalOfferPrices(productId: String, completion: @escaping (Result<[String: Double], Error>) -> Void) {
+    Task {
+      completion(.success(await PromotionalOfferPrices.fetch(productId)))
+    }
+  }
+
+  func purchase(
+    productId: String,
+    billingPlan: PBillingPlan?,
+    promotionalOffer: PPromotionalOffer?,
+    completion: @escaping (Result<any PPurchaseResult, Error>) -> Void
+  ) {
     Task {
       let products = await Superwall.shared.products(for: [productId])
       guard let found = products.first(where: { $0.productIdentifier == productId }) else {
         completion(.success(PPurchaseFailed(error: "Product with id \(productId) not found")))
         return
       }
-      guard let product = product(found, on: billingPlan) else {
+      guard let planned = product(found, on: billingPlan) else {
         completion(.success(PPurchaseFailed(error: "Billing plan not available for \(productId)")))
+        return
+      }
+      guard let product = product(planned, with: promotionalOffer) else {
+        completion(.success(PPurchaseFailed(error: "Promotional offers are not available in this build")))
         return
       }
       let result = await Superwall.shared.purchase(product)

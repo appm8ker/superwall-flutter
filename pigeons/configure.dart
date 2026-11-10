@@ -16,6 +16,14 @@ import 'package:pigeon/pigeon.dart';
 
 enum PBillingPlan { upFront, monthly }
 
+/// An App Store promotional offer and the JWS a server signed for it.
+class PPromotionalOffer {
+  String offerId;
+  String compactJws;
+
+  PPromotionalOffer({required this.offerId, required this.compactJws});
+}
+
 sealed class PRedemptionResult {
   PRedemptionResult();
 }
@@ -1652,9 +1660,16 @@ abstract class PSuperwallHostApi {
   @async
   List<PStoreProduct> getProducts(List<String> productIds, PBillingPlan? billingPlan);
 
-  /// Android has no billing plans: a non-null [billingPlan] fails.
+  /// Android has no billing plans or promotional offers: a non-null
+  /// [billingPlan] or [promotionalOffer] fails.
   @async
-  PPurchaseResult purchase(String productId, PBillingPlan? billingPlan);
+  PPurchaseResult purchase(String productId, PBillingPlan? billingPlan,
+      PPromotionalOffer? promotionalOffer);
+
+  /// The price of each App Store promotional offer of a product, by offer id.
+  /// Android: always empty.
+  @async
+  Map<String, double> getPromotionalOfferPrices(String productId);
 
   /// Whether the current App Store user can still take each product's
   /// introductory offer (free trial). Android: always true, Play Billing only
