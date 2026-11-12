@@ -12,16 +12,20 @@ let package = Package(
         .library(name: "superwallkit-flutter", targets: ["superwallkit_flutter"])
     ],
     dependencies: [
-        // Pinned to match the version declared in the podspec
-        // (s.dependency 'SuperwallKit', '4.18.3').
-        .package(url: "https://github.com/superwall/Superwall-iOS.git", exact: "4.19.1")
+        // Our fork of SuperwallKit 4.19.1, which adds
+        // StoreProduct.withPromotionalOffer. CocoaPods apps (anotarapp) pin the
+        // same commit in their Podfile; this is the Swift Package Manager side.
+        .package(url: "https://github.com/appm8ker/Superwall-iOS.git", revision: "39cd2216f1b09d938893965b8e6b644d1a8a5de4")
     ],
     targets: [
         .target(
             name: "superwallkit_flutter",
             dependencies: [
                 .product(name: "SuperwallKit", package: "Superwall-iOS")
-            ]
+            ],
+            // Promotional offers on direct purchases; CocoaPods apps set it on
+            // the plugin target in their Podfile.
+            swiftSettings: [.define("ANOTAR_PROMOTIONAL_OFFER")]
         )
     ]
 )
