@@ -37,6 +37,7 @@ import PPurchaseFailed
 import PPurchasePending
 import PPurchasePurchased
 import PBillingPlan
+import PPromotionalOffer
 import PPurchaseResult
 import PRestorationFailed
 import PRestorationRestored
